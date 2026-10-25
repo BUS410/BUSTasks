@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+  <div class="page-heading compact-heading">
+    <div>
+      <a class="back-link" href="{{ url_for('index') }}">← Все задачи</a>
+      <h1>{{ page_title }}</h1>
+    </div>
+  </div>
+
+  <form class="form-card" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="title">Название <span class="required">*</span></label>
+      <input id="title" name="title" type="text" maxlength="200" required
+             placeholder="Например, подготовить отчёт" value="{{ task.title }}">
+    </div>
+    <div class="field">
+      <label for="description">Описание</label>
+      <textarea id="description" name="description" rows="5" maxlength="10000"
+                placeholder="Добавьте подробности задачи">{{ task.description }}</textarea>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="due_date">Планируемая дата выполнения</label>
+        <input id="due_date" name="due_date" type="date" value="{{ task.due_date or '' }}">
+      </div>
+      <div class="field">
+        <label for="assignee">Исполнитель</label>
+        <input id="assignee" name="assignee" type="text" maxlength="100"
+               placeholder="Имя исполнителя"
+               value="{{ task.assignee or ('Все' if page_title == 'Новая задача' else '') }}">
+      </div>
+      <div class="field">
+        <label for="priority">Приоритет</label>
+        <select id="priority" name="priority">
+          {% for value, label in PRIORITIES.items() %}
+            <option value="{{ value }}" {% if task.priority == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="status">Статус</label>
+        <select id="status" name="status">
+          {% for value, label in STATUSES.items() %}
+            <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <a class="button button-secondary" href="{{ url_for('index') }}">Отмена</a>
+      <button class="button button-primary" type="submit">Сохранить задачу</button>
+    </div>
+  </form>
+{% endblock %}

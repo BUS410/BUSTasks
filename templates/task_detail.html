@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block content %}
+  <div class="page-heading compact-heading">
+    <div>
+      <a class="back-link" href="{{ url_for('index') }}">← Все задачи</a>
+      <p class="eyebrow">Задача #{{ task.id }}</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('edit_task', task_id=task.id) }}">Изменить</a>
+  </div>
+
+  <article class="detail-card{% if task.status == 'completed' %} detail-card-completed{% endif %}">
+    <div class="detail-title-row">
+      <h1>{{ task.title }}</h1>
+      <span class="badge badge-{{ task.status }}">{{ STATUSES[task.status] }}</span>
+    </div>
+    {% if task.description %}
+      <div class="detail-description">{{ task.description }}</div>
+    {% else %}
+      <p class="muted">Описание не добавлено.</p>
+    {% endif %}
+    <div class="detail-meta">
+      <div><span class="meta-label">Приоритет</span><span class="priority priority-{{ task.priority }}">{{ PRIORITIES[task.priority] }}</span></div>
+      <div><span class="meta-label">Исполнитель</span><span>{{ task.assignee or "Не назначен" }}</span></div>
+      <div><span class="meta-label">Планируемый срок</span><span>{{ format_date(task.due_date) or "Не указан" }}</span></div>
+      <div><span class="meta-label">Создана</span><span>{{ format_date(task.created_at) }}</span></div>
+    </div>
+  </article>
+
+  <section class="comments-section">
+    <div class="section-heading">
+      <h2>Комментарии</h2>
+      <span class="comment-count">{{ comments|length }}</span>
+    </div>
+    {% if comments %}
+      <div class="comment-list">
+        {% for comment in comments %}
+          <article class="comment">
+            <div class="comment-header">
+              <strong>{{ comment.author or "Без имени" }}</strong>
+              <time>{{ format_date(comment.created_at) }}</time>
+            </div>
+            <p>{{ comment.body }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted no-comments">Комментариев пока нет. Добавьте первый.</p>
+    {% endif %}
+
+    <form class="form-card comment-form" method="post"
+          action="{{ url_for('add_comment', task_id=task.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3>Добавить комментарий</h3>
+      <div class="field">
+        <label for="author">Ваше имя <span class="optional">(необязательно)</span></label>
+        <input id="author" name="author" type="text" maxlength="100" placeholder="Как к вам обращаться">
+      </div>
+      <div class="field">
+        <label for="body">Комментарий <span class="required">*</span></label>
+        <textarea id="body" name="body" rows="4" maxlength="5000" required
+                  placeholder="Напишите комментарий"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="button button-primary" type="submit">Отправить комментарий</button>
+      </div>
+    </form>
+  </section>
+
+  <form class="delete-form" method="post" action="{{ url_for('delete_task', task_id=task.id) }}"
+        onsubmit="return confirm('Удалить задачу и все её комментарии?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="text-button danger-text" type="submit">Удалить задачу</button>
+  </form>
+{% endblock %}

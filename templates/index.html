@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Все задачи{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Планируйте и выполняйте</p>
+      <h1>Все задачи</h1>
+      <p class="muted">{{ total }} задач всего</p>
+    </div>
+    <a class="button button-primary" href="{{ url_for('create_task') }}">＋ Создать задачу</a>
+  </div>
+
+  <form class="list-controls" method="get" action="{{ url_for('index') }}">
+    <div class="field">
+      <label for="status-filter">Статус</label>
+      <select id="status-filter" name="status">
+        <option value="">Все статусы</option>
+        {% for value, label in STATUSES.items() %}
+          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="priority-filter">Приоритет</label>
+      <select id="priority-filter" name="priority">
+        <option value="">Любой приоритет</option>
+        {% for value, label in PRIORITIES.items() %}
+          <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="sort">Сортировка</label>
+      <select id="sort" name="sort">
+        <option value="created_desc" {% if sort_by == 'created_desc' %}selected{% endif %}>Сначала новые</option>
+        <option value="created_asc" {% if sort_by == 'created_asc' %}selected{% endif %}>Сначала старые</option>
+        <option value="due_asc" {% if sort_by == 'due_asc' %}selected{% endif %}>По сроку: сначала ближайшие</option>
+        <option value="due_desc" {% if sort_by == 'due_desc' %}selected{% endif %}>По сроку: сначала дальние</option>
+        <option value="title_asc" {% if sort_by == 'title_asc' %}selected{% endif %}>По названию: А–Я</option>
+        <option value="title_desc" {% if sort_by == 'title_desc' %}selected{% endif %}>По названию: Я–А</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button class="button button-primary" type="submit">Применить</button>
+      <a class="button button-secondary" href="{{ url_for('index') }}">Сбросить</a>
+    </div>
+  </form>
+
+  {% if tasks %}
+    <section class="task-list" aria-label="Список задач">
+      {% for task in tasks %}
+        <article class="task-card{% if task.status == 'completed' %} task-card-completed{% endif %}">
+          <a class="task-main" href="{{ url_for('task_detail', task_id=task.id) }}">
+            <div class="task-title-row"><h2>{{ task.title }}</h2></div>
+            {% if task.description %}<p class="task-description">{{ task.description }}</p>{% endif %}
+            <div class="task-meta">
+              <span class="priority priority-{{ task.priority }}">{{ PRIORITIES[task.priority] }} приоритет</span>
+              {% if task.assignee %}<span>Исполнитель: {{ task.assignee }}</span>{% endif %}
+              {% if task.due_date %}<span>Срок: {{ format_date(task.due_date) }}</span>{% endif %}
+            </div>
+          </a>
+          <form class="status-form" method="post"
+                action="{{ url_for('update_task_status', task_id=task.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="page" value="{{ page }}">
+            <input type="hidden" name="filter_status" value="{{ status_filter }}">
+            <input type="hidden" name="filter_priority" value="{{ priority_filter }}">
+            <input type="hidden" name="sort" value="{{ sort_by }}">
+            <label class="visually-hidden" for="status-{{ task.id }}">Статус задачи «{{ task.title }}»</label>
+            <select id="status-{{ task.id }}" name="status" class="status-select">
+              {% for value, label in STATUSES.items() %}
+                <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button class="status-submit" type="submit">Сохранить</button>
+          </form>
+          <form class="card-delete-form" method="post"
+                action="{{ url_for('delete_task', task_id=task.id) }}"
+                onsubmit="return confirm('Удалить задачу и все её комментарии?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="filter_status" value="{{ status_filter }}">
+            <input type="hidden" name="filter_priority" value="{{ priority_filter }}">
+            <input type="hidden" name="sort" value="{{ sort_by }}">
+            <button class="text-button danger-text" type="submit"
+                    aria-label="Удалить задачу «{{ task.title }}»">Удалить</button>
+          </form>
+          <span class="card-arrow" aria-hidden="true">›</span>
+        </article>
+      {% endfor %}
+    </section>
+
+    {% if page_count > 1 %}
+      <nav class="pagination" aria-label="Страницы задач">
+        {% if page > 1 %}
+          <a class="page-link" href="{{ url_for('index', page=page - 1, status=status_filter, priority=priority_filter, sort=sort_by) }}">← Назад</a>
+        {% else %}
+          <span class="page-link page-link-disabled">← Назад</span>
+        {% endif %}
+        <span class="page-counter">Страница {{ page }} из {{ page_count }}</span>
+        {% if page < page_count %}
+          <a class="page-link" href="{{ url_for('index', page=page + 1, status=status_filter, priority=priority_filter, sort=sort_by) }}">Вперёд →</a>
+        {% else %}
+          <span class="page-link page-link-disabled">Вперёд →</span>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <section class="empty-state">
+      <div class="empty-icon">✓</div>
+      {% if total %}
+        <h2>Задачи не найдены</h2>
+        <p>Измените условия фильтрации или сбросьте фильтры.</p>
+      {% else %}
+        <h2>Пока нет задач</h2>
+        <p>Создайте первую задачу, чтобы начать работу.</p>
+      {% endif %}
+      <a class="button button-primary" href="{{ url_for('create_task') }}">Создать задачу</a>
+    </section>
+  {% endif %}
+{% endblock %}
